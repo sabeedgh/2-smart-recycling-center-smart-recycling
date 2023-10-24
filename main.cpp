@@ -4,6 +4,7 @@
 #include "connection.h"
 int main(int argc, char *argv[])
 {
+    cout<<"HELLO WORLD";
     QApplication a(argc, argv);
     MainWindow w;
     Connection c;
