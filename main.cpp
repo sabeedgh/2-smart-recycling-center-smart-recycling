@@ -9,6 +9,8 @@ int main(int argc, char *argv[])
     Connection c;
     bool test=c.createconnect();
     cout<<"hello world"<<endl;
+    cout<<"hello world 2020"<<endl;
+
     if(test)
     {w.show();
         QMessageBox::critical(nullptr, QObject::tr("database is open"),
