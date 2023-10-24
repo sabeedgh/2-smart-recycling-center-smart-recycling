@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     Connection c;
     bool test=c.createconnect();
+    cout<<"hello world"<<endl;
     if(test)
     {w.show();
         QMessageBox::critical(nullptr, QObject::tr("database is open"),
