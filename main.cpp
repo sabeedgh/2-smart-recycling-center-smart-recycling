@@ -5,6 +5,7 @@
 int main(int argc, char *argv[])
 {
     cout<<"HELLO WORLD";
+    cout<<"HELLO WORLD1";
     QApplication a(argc, argv);
     MainWindow w;
     Connection c;
