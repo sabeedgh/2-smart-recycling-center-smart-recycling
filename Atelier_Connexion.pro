@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui sql
-
+QT       += sql
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Atelier_Connexion
@@ -27,11 +27,13 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    connection.cpp
+    connection.cpp \
+    produit.cpp
 
 HEADERS += \
         mainwindow.h \
-    connection.h
+    connection.h \
+    produit.h
 
 FORMS += \
         mainwindow.ui

@@ -1,8 +1,8 @@
-QT+= sql
+QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += console
+CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -17,17 +17,18 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     dialog.cpp \
+    log.cpp \
     main.cpp \
-    mainwindow.cpp \
-    produitrecyc.cpp
+    mainwindow.cpp
 
 HEADERS += \
     dialog.h \
-    mainwindow.h \
-    produitrecyc.h
+    log.h \
+    mainwindow.h
 
 FORMS += \
     dialog.ui \
+    log.ui \
     mainwindow.ui
 
 # Default rules for deployment.
