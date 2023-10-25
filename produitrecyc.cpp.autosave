@@ -1,0 +1,15 @@
+#include "produitrecyc.h"
+
+produitrecyc::produitrecyc()
+{
+  codeàbar="";
+  type="";
+  datedachat="";
+}
+void produitrecyc::setcodeàbar(QString n){codeàbar=n;}
+void produitrecyc::settype(QString n){type=n;}
+void produitrecyc::setdatedachat(QString n){datedachat=n;}
+
+QString produitrecyc::get_codeàbar(){return codeàbar;}
+QString produitrecyc::get_type(){return type;}
+QString produitrecyc::get_datedachat(){return datedachat;}

@@ -1,0 +1,21 @@
+#ifndef PRODUITRECYC_H
+#define PRODUITRECYC_H
+#include<QString>
+
+
+class produitrecyc
+{
+public:
+    void setcodeàbar(QString n);
+    void settype(QString n);
+    void setdatedachat(QString n);
+    QString get_codeàbar();
+    QString get_type();
+    QString get_datedachat();
+    produitrecyc();
+private:
+    QString codeàbar , type , datedachat;
+    
+};
+
+#endif // PRODUITRECYC_H
