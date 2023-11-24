@@ -1,0 +1,550 @@
+
+#include <QTextDocument>
+#include <QTextStream>
+#include <QDate>
+#include <QPrinter>
+#include <QPainter>
+
+#include <QDesktopServices>
+#include <QUrl>
+#include <QDir>
+#include <QStandardPaths>
+#include<QPdfWriter>
+
+void MainWindow::on_pb_pdf_clicked()
+{
+ QString strStream;
+               QTextStream out(&strStream);
+               QDate currentDate = QDate::currentDate();
+               QString date = currentDate.toString("dd-MM-yyyy");
+
+
+               const int rowCount = ui->tab_Clients->model()->rowCount();
+               const int columnCount = ui->tab_Clients->model()->columnCount();
+
+               out <<  "<html>\n"
+                   "<head>\n"
+                   "<meta Content=\"Text/html; charset=Windows-1251\">\n"
+                   <<  QString("<title>%1</title>\n").arg("col1")
+                   <<  "</head>\n"
+                   "<body bgcolor=#ffffff link=#5000A0>\n"
+                   "<h3 style='position: absolute; top: 0; right: 0; margin: 0; padding: 10px; text-align: right; font-size: 24px; color: #333;'> Tunis "+date+"</h3>"
+                   "<h1 style='text-align: center;'>Liste des Clients </h1>\n"
+                   "<br>\n"
+                   "<br>\n"
+                       "<div align='center'>"
+                   "<table border=1 cellspacing=0 cellpadding=2>\n";
+
+               // headers
+               out << "<thead><tr bgcolor=#f0f0f0>";
+               for (int column = 0; column < columnCount; column++)
+                   if (!ui->tab_Clients->isColumnHidden(column))
+                       out << QString("<th>%1</th>").arg(ui->tab_Clients->model()->headerData(column, Qt::Horizontal).toString());
+               out << "</tr></thead>\n";
+
+               // data table
+               for (int row = 0; row < rowCount; row++) {
+                   out << "<tr>";
+                   for (int column = 0; column < columnCount; column++) {
+                       if (!ui->tab_Clients->isColumnHidden(column)) {
+                           QString data = ui->tab_Clients->model()->data(ui->tab_Clients->model()->index(row, column)).toString().simplified();
+                           out << QString("<td bkcolor=0>%1</td>").arg((!data.isEmpty()) ? data : QString("&nbsp;"));
+                       }
+                   }
+                   out << "</tr>\n";
+               }
+               out <<  "</table>\n"
+                       "</div>"
+                   "</body>\n"
+                   "</html>\n";
+
+               QTextDocument *document = new QTextDocument();
+               document->setHtml(strStream);
+
+               QPrinter printer;
+
+                   document->print(&printer);
+
+
+               delete document;  
+
+}
+
+MAINWINDOW.CPP
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
+#include "aliments.h"
+#include "aliments.cpp"
+#include "mainwindow.h"
+
+#include <QMessageBox>
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    ui->tableView->setModel(afficherAliments());
+    ui->lineEdit_5->setValidator(new QIntValidator(0,999999,this));
+    ui->lineEdit->setValidator(new QIntValidator(0,999999,this));
+    ui->lineEdit_8->setValidator(new QIntValidator(0,999999,this));
+
+
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+
+    QString dateimp = ui->lineEdit_2->text();
+    int ref = ui->lineEdit->text().toInt();
+    int refc = ui->lineEdit_6->text().toInt();
+    QString datexp = ui->lineEdit_3->text();
+    int quantite = ui->lineEdit_5->text().toInt();
+    QString type = ui->lineEdit_4->text();
+
+    bool idIsValid = false;
+               int idValue = ui->lineEdit->text().toInt(&idIsValid);
+
+               if (!idIsValid || ui->lineEdit->text().length() < 6) {
+                   QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer un ref valide (au moins 6 chiffres)."), QMessageBox::Cancel);
+                   return;
+               }
+
+               QSqlQueryModel *existingAliment = Etmp.rechercher(ref);
+                   if (existingAliment->rowCount() > 0) {
+                       QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("L'aliment avec cet ref existe déjà."), QMessageBox::Cancel);
+                       delete existingAliment;
+                       return;
+                   }
+                if (dateimp.isEmpty() || !dateimp.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer une dateimp valide."), QMessageBox::Cancel);
+                           return;
+                       }
+
+                       if (datexp.isEmpty() || !datexp.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer une datexp valide."), QMessageBox::Cancel);
+                           return;
+                       }
+                       if (type.isEmpty() || !type.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer un type valide."), QMessageBox::Cancel);
+                           return;
+                       }
+
+
+    Aliments Etmp (ref,type,quantite,refc,dateimp,datexp);
+
+    bool test = Etmp.ajouter();
+
+        if (test) {
+            QMessageBox::information(nullptr, QObject::tr("Succès"),
+                                     QObject::tr("Ajout effectué.\nClick Cancel to exit."), QMessageBox::Cancel);
+        } else {
+            QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Erreur lors de l'ajout.\nClick Cancel to exit."), QMessageBox::Cancel);
+        }
+
+
+    ui->tableView->setModel(afficherAliments());
+
+}
+
+
+void MainWindow::on_pushButton_12_clicked()
+{
+    Aliments Etmp; Etmp.setref(ui->lineEdit_7->text().toInt());
+    //QSqlQuery query;
+    //QString ref= QString::number(ui->lineEdit_7->text().toInt());
+    //.prepare("DELETE from aliments where REF_AL= :ref");
+    //query.bindValue(":REF_AL",ref);
+    QSqlQueryModel *existingAliment = Etmp.rechercher(ui->lineEdit_7->text().toInt());
+        if (existingAliment->rowCount() == 0) {
+            QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("L'aliment avec cet ref n'existe pas."), QMessageBox::Cancel);
+            delete existingAliment;
+            return;
+        }
+    bool test=Etmp.supprimer(Etmp.getref());
+
+    if (test) {
+            QMessageBox::information(nullptr, QObject::tr("SUCCES"), QObject::tr("Operation Effectuée"),
+                                     QMessageBox::Ok);
+            ui->tableView->setModel(afficherAliments());
+    }
+    else {
+        QMessageBox::critical(nullptr, QObject::tr("ERREUR"), QObject::tr("Operation ECHOUEE"),
+                                 QMessageBox::Cancel);
+    }
+}
+void MainWindow::on_pushButton_13_clicked()
+{
+    int ref=ui->lineEdit_8->text().toInt();
+    QString dateimp=ui->lineEdit_9->text();
+    QString datexp=ui->lineEdit_10->text();
+    QString type=ui->lineEdit_11->text();
+    int quantite=ui->lineEdit_12->text().toInt();
+    int refc=ui->lineEdit_13->text().toInt();
+    Aliments Etmp (ref,type,quantite,refc,dateimp,datexp);
+    //bool test=Etmp.modifier(ref);
+    bool idIsValid = false;
+               int idValue = ui->lineEdit_8->text().toInt(&idIsValid);
+
+               if (!idIsValid || ui->lineEdit_8->text().length() < 6) {
+                   QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer un ref valide (au moins 6 chiffres)."), QMessageBox::Cancel);
+                   return;
+               }
+
+               QSqlQueryModel *existingAliment = Etmp.rechercher(ref);
+                   if (existingAliment->rowCount() == 0) {
+                       QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("L'aliment avec cet ref n'existe pas."), QMessageBox::Cancel);
+                       delete existingAliment;
+                       return;
+                   }
+                if (dateimp.isEmpty() || !dateimp.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer une dateimp valide."), QMessageBox::Cancel);
+                           return;
+                       }
+
+                       if ( !datexp.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer une datexp valide."), QMessageBox::Cancel);
+                           return;
+                       }
+                       if (type.isEmpty() || !type.contains(QRegularExpression("^[a-zA-Z]+$"))) {
+                           QMessageBox::critical(nullptr, QObject::tr("Erreur"), QObject::tr("Veuillez entrer un type valide."), QMessageBox::Cancel);
+                           return;
+                       }
+
+
+
+    bool test=Etmp.modifier(ref);
+    if(test)
+    {
+            QMessageBox::information(nullptr, QObject::tr("OK"),
+                        QObject::tr("Update effectue\n"
+                                    "Click Cancel to exit."), QMessageBox::Cancel);
+
+
+
+
+    }
+        else
+            { QMessageBox::critical(nullptr, QObject::tr("NOT OK"),
+                        QObject::tr("Update non effectue.\n"
+                                    "Click Cancel to exit."), QMessageBox::Cancel);
+
+    }
+
+
+
+}
+void MainWindow::on_pushButton_15_clicked()
+{
+    Aliments c;
+    QSqlQueryModel MyModel;
+    ui->tableView_2->setModel(c.trier_type());
+    ui->tableView_2->setModel(afficherAliments());
+
+    bool test=c.trier_type();
+    if(test)
+    {
+        ui->tableView_2->setModel(c.trier_type());
+
+                    QMessageBox::information(nullptr,QObject::tr("ok"),
+                                             QObject::tr("tri par type effectué \n"
+                                                         "Click Cancel to exist ."),QMessageBox::Cancel);
+
+
+                }
+                else
+                     { QMessageBox::critical(nullptr, QObject::tr("non"),
+                                  QObject::tr("tri par typr failed.\n"
+                                              "Click Cancel to exit."), QMessageBox::Cancel);}
+}
+void MainWindow::on_pushButton_16_clicked()
+{
+    Aliments a;
+    int refrech = ui->lineEdit_14->text().toInt();
+
+       // Utilisez la méthode Employe::rechercher pour obtenir le modèle de données
+       QSqlQueryModel *resultModel = a.rechercher(refrech);
+
+       // Assurez-vous que le modèle de données n'est pas vide et qu'il contient des informations
+       if (resultModel && resultModel->rowCount() > 0) {
+           // Assurez-vous que votre QTableView "aff3" est correctement configuré dans votre interface graphique
+           ui->tableView_2->setModel(resultModel);
+       } else {
+           // Si le modèle est vide, affichez un message d'erreur
+           QMessageBox::critical(this, "Erreur", "Aucune donnée trouvée pour cet ID.", QMessageBox::Cancel);
+       }
+}
+void MainWindow::on_pushButton_14_clicked()
+{     Aliments a;
+
+            // L'onglet "Statistique" est sélectionné
+            QMap<QString, int> statistics =a.getquantiteStatistics();
+            int totalqt = 0;
+
+            // Calculer le nombre total
+            for (const QString &quantite : statistics.keys()) {
+                totalqt += statistics[quantite];
+            }
+
+            QString message = "\n";
+
+            for (const QString &quantite : statistics.keys()) {
+                int count = statistics[quantite];
+                double percentage = (static_cast<double>(count) / totalqt) * 100.0;
+                message += quantite + ": " + QString::number(count) + " aliments (" + QString::number(percentage, 'f', 2) + "%)\n";
+            }
+
+            ui->label_18->setText(message); // Afficher les statistiques dans le QLabel
+
+}
+
+
+
+ALIM.CPP
+#include "aliments.h"
+
+#include "aliments.h"
+#include "mainwindow.h"
+
+#include <QMessageBox>
+#include <QMessageBox>
+#include <cstdlib>
+#include <QObject>
+#include <iostream>
+#include <QString>
+#include <QUrlQuery>
+#include <QDebug>
+
+Aliments::Aliments()
+{
+    ref= 0;
+    refc=0;
+    dateimp="";
+    datexp="";
+    quantite= 0;
+    type= "";
+}
+
+Aliments::Aliments(int ref,QString type, int quantite, int refc,QString dateimp,QString datexp)
+{
+    this->ref= ref;
+    this->refc= refc;
+    this->dateimp = dateimp;
+    this->quantite= quantite;
+    this->datexp= datexp;
+    this->type = type;
+}
+
+// GETTERS
+int Aliments::getref()
+{
+    return ref;
+}
+QString Aliments::getdateimp()
+{
+    return dateimp;
+}
+QString Aliments::getdatexp()
+{
+    return datexp;
+}
+QString Aliments::gettype()
+{
+    return type;
+}
+int Aliments::getquantite()
+{
+    return quantite;
+}
+
+// SETTERS
+void Aliments::setref(int newref)
+{
+    ref= newref;
+}
+void Aliments::setdateimp(QString newdateimp)
+ {   dateimp=newdateimp;
+}
+void Aliments::setquantite(int newquantite)
+{
+    quantite = newquantite;
+}
+void Aliments::setdateexp(QString newdatexp)
+{
+    datexp=newdatexp;
+}
+void Aliments::settype(QString newtype)
+{
+   type=newtype;
+}
+
+bool Aliments::ajouter()
+{
+    QSqlQuery query;
+
+
+    query.prepare("INSERT INTO ALIMENTS"
+                  " (REF_AL,TYPE_AL,QUANTITE_AL,REFCO,DATEIMP_AL,DATEEXP_AL)"
+                  "VALUES (:ref,:type,:quantite,:refc,:dateimp,:datexp)");
+
+    QString tmpref = QString::number(ref);
+    QString tmprefco = QString::number(refc);
+    QString tmpquantite = QString::number(quantite);
+    QString tmpdateexp = QString(datexp);
+    QString tmpdateimp = QString(dateimp);
+    QString tmptype = QString(type);
+
+
+    query.bindValue(":ref", tmpref);
+    query.bindValue(":dateimp", tmpdateimp);
+    query.bindValue(":datexp",tmpdateexp);
+    query.bindValue(":type", tmptype);
+    query.bindValue(":quantite", tmpquantite);
+    query.bindValue(":refc", tmprefco);
+
+
+    return (query.exec());
+}
+
+QSqlQueryModel* Aliments::afficher()
+{
+    QSqlQueryModel *model = new QSqlQueryModel();
+
+    model->setQuery("select * from aliments");
+    model->setHeaderData(0, Qt::Horizontal, QObject::tr("REF"));
+    return model;
+}
+
+QSqlQueryModel *afficherAliments()
+{
+    QSqlQueryModel *model = new QSqlQueryModel();
+
+    model->setQuery("select * from aliments");
+    model->setHeaderData(0, Qt::Horizontal, QObject::tr("REF_AL"));
+    return model;
+}
+bool Aliments::supprimer(int ref)
+{
+    QSqlQuery query;
+    //QString tmpref = QString::number(ref);
+
+    query.prepare("Delete from aliments where REF_AL=:ref");
+    query.bindValue(0,ref);
+    return query.exec();
+
+}
+
+bool Aliments::modifier(int ref)
+{
+
+    QSqlQuery query;
+    query.prepare("SELECT * FROM ALIMENTS WHERE REF_AL =:refrech");
+     //QString ref_string=QString::number(ref);
+     //QString quantite_string=QString::number(quantite);
+      //QString refc_string=QString::number(refc);
+          query.prepare("UPDATE ALIMENTS SET REF_AL=:ref,TYPE_AL=:type,QUANTITE_AL=:quantite,REFCO=:refc,DATEIMP_AL=:dateimp,DATEEXP_AL=:datexp where REF_AL=:ref");
+          //uery.bindValue(":ref",ref_string);
+          //query.bindValue(":quantite",quantite_string);
+          //query.bindValue(":refc",refc_string);
+          //query.bindValue(":dateimp",dateimp);
+          //query.bindValue(":datexp",datexp);
+          //query.bindValue(":type",type);
+
+    QString tmpref = QString::number(ref);
+    QString tmprefco = QString::number(refc);
+    QString tmpquantite = QString::number(quantite);
+    QString tmpdateexp = QString(datexp);
+    QString tmpdateimp = QString(dateimp);
+    QString tmptype = QString(type);
+
+
+    query.bindValue(":ref", tmpref);
+    query.bindValue(":dateimp", tmpdateimp);
+    query.bindValue(":datexp",tmpdateexp);
+    query.bindValue(":type", tmptype);
+    query.bindValue(":quantite", tmpquantite);
+    query.bindValue(":refc", tmprefco);
+
+
+
+          return (query.exec());
+
+
+
+}
+QSqlQueryModel* Aliments:: trier_type()
+{
+
+    QSqlQueryModel * model=new QSqlQueryModel();
+
+    model->setQuery("select * from ALIMENTS order by TYPE_AL ");
+
+    model->setHeaderData(0, Qt::Horizontal, QObject::tr(" REF_AL"));
+  model->setHeaderData(1, Qt::Horizontal, QObject::tr(" TYPE_AL")); //donner nom au colonne
+      model->setHeaderData(2, Qt::Horizontal, QObject::tr(" QUANTITE_AL"));
+    model->setHeaderData(3, Qt::Horizontal, QObject::tr("REFCO_AL"));;
+       model->setHeaderData(4, Qt::Horizontal, QObject::tr("DATEIMP_AL"));
+       model->setHeaderData(5, Qt::Horizontal, QObject::tr("DATEXP_AL"));
+
+
+
+    return model;
+}
+
+QSqlQueryModel * Aliments::rechercher(int refrech) {
+    QSqlQueryModel *model = new QSqlQueryModel();
+      QSqlQuery query;
+      query.prepare("SELECT * FROM ALIMENTS WHERE REF_AL =:refrech");
+      query.bindValue(":refrech", refrech); // Ajout de la liaison
+
+      if (query.exec()) {
+          model->setQuery(query);
+      }
+
+      return model;
+}
+QSqlQueryModel *Aliments::rechercher1(int refrech)
+{
+
+    QSqlQueryModel *model = new QSqlQueryModel();
+      QSqlQuery query;
+      query.prepare("SELECT * FROM ALIMENTS WHERE REF_AL =:refrech");
+      query.bindValue(":refrech", refrech); // Ajout de la liaison
+
+      if (query.exec()) {
+          model->setQuery(query);
+      }
+
+      return model;
+
+}
+QMap<QString, int> Aliments::getquantiteStatistics()
+{
+    QMap<QString, int> statistics;
+
+        QSqlQuery query;
+        query.prepare("SELECT COUNT(*) AS count FROM ALIMENTS WHERE QUANTITE_AL < 30");
+        if (query.exec() && query.next()) {
+            statistics["Moins de 30 KG"] = query.value("count").toInt();
+        }
+
+        query.prepare("SELECT COUNT(*) AS count FROM ALIMENTS WHERE QUANTITE_AL >= 30 AND QUANTITE_AL <= 40");
+        if (query.exec() && query.next()) {
+            statistics["30-40 kg"] = query.value("count").toInt();
+        }
+        query.prepare("SELECT COUNT(*) AS count FROM EMPLOYES WHERE QUANTITE_AL > 40");
+                if (query.exec() && query.next()) {
+                    statistics["Plus de 40 kg"] = query.value("count").toInt();
+                }
+
+                return statistics;
+        }
+
+
+
